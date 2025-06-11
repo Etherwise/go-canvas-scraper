@@ -57,10 +57,15 @@ def click_with_delay(driver, css_selector, wait_time=10, pre_delay=(0.5,1.0), po
 def run_scrape():
     logging.info("Starting browser setup.")
     chrome_options = Options()
-    chrome_options.add_argument("--start-maximized")
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    for flag in (
+        "--headless",
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--window-size=1920,1080",
+        "--disable-gpu",
+        "--disable-extensions",
+    ):
+        chrome_options.add_argument(flag)
     driver = webdriver.Chrome(options=chrome_options)
 
     try:
