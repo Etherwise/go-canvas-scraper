@@ -54,7 +54,7 @@ def click_with_delay(driver, css_selector, wait_time=10, pre_delay=(0.5,1.0), po
 
 # ─── Main Flow ─────────────────────────────────────────────────────────────
 
-def main():
+def run_scrape():
     logging.info("Starting browser setup.")
     chrome_options = Options()
     chrome_options.add_argument("--start-maximized")
@@ -123,7 +123,3 @@ def main():
         logging.info("Closing browser.")
         random_delay(1, 2)
         driver.quit()
-
-
-if __name__ == "__main__":
-    main()
