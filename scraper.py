@@ -92,7 +92,7 @@ def run_scrape():
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "body"))
         )
-        random_delay(1, 2)
+        random_delay(2, 5)
 
         # 5. Open dropdown menu
         dropdown_selector = "nav.nav--scrollable div.navigation-item > div.item--label"
