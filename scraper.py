@@ -1,11 +1,13 @@
 import time
 import random
 import logging
+from httpx import TimeoutException
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 # Configure logging
 logging.basicConfig(
@@ -52,14 +54,12 @@ def click_with_delay(driver, css_selector, wait_time=10, pre_delay=(0.5,1.0), po
     logging.info(f"Clicked element: {css_selector}")
     random_delay(*post_delay)
 
-# ─── Main Flow ─────────────────────────────────────────────────────────────
-
-def run_scrape():
+def run_scrape(userid, password, formname):
     logging.info("Starting browser setup.")
     chrome_options = Options()
     for flag in (
-        "--headless",
         "--no-sandbox",
+        # "--headless",
         "--disable-dev-shm-usage",
         "--window-size=1920,1080",
         "--disable-gpu",
@@ -67,6 +67,7 @@ def run_scrape():
     ):
         chrome_options.add_argument(flag)
     driver = webdriver.Chrome(options=chrome_options)
+    table_row = {"default":"nav.nav--scrollable div.nav--sub-wrap > a:nth-child(3) > div"}
 
     try:
         # 1. Navigate to login page
@@ -80,13 +81,13 @@ def run_scrape():
         email_el = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "#login"))
         )
-        human_typing(email_el, "development@the-resources-group.com")
+        human_typing(email_el, userid)
         random_delay(0.5, 1.5)
 
         # 3. Enter password
         logging.info("Locating password field.")
         pwd_el = driver.find_element(By.CSS_SELECTOR, "#password")
-        human_typing(pwd_el, "JKR791w!", min_delay=0.2, max_delay=0.4)
+        human_typing(pwd_el, password, min_delay=0.2, max_delay=0.4)
         random_delay(0.5, 1.5)
 
         # 4. Click login button
@@ -105,7 +106,8 @@ def run_scrape():
         click_with_delay(driver, dropdown_selector)
 
         # 6. Click 3rd submenu item
-        submenu_selector = "nav.nav--scrollable div.nav--sub-wrap > a:nth-child(3) > div"
+        # submenu_selector = table_row["default"]
+        submenu_selector = table_row.get(formname, table_row["default"])
         logging.info("Clicking 3rd submenu item.")
         click_with_delay(driver, submenu_selector)
 
@@ -121,6 +123,31 @@ def run_scrape():
 
         logging.info("Navigation complete.")
 
+        # ─── Logout Flow ───────────────────────────────
+        logging.info("Initiating logout.")
+        user_dropdown_selector = "div.user--info__toggle.navigation-item"
+
+        # Step 1: Click user dropdown
+        click_with_delay(driver, user_dropdown_selector)
+
+        # Step 2: Wait for logout element and click it (robust fallback with JS)
+        try:
+            logging.info("Waiting for logout item to appear.")
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, "//a[contains(@href, '/logout') and .//div[contains(text(), 'Logout')]]"))
+            )
+
+            logout_el = driver.find_element(By.XPATH, "//a[contains(@href, '/logout') and .//div[contains(text(), 'Logout')]]")
+            random_delay(0.3, 0.6)
+            driver.execute_script("arguments[0].click();", logout_el)
+            logging.info("Logout clicked via JS.")
+            random_delay(1, 2)
+
+        except (TimeoutException, NoSuchElementException) as e:
+            logging.error("Logout link not found or failed to click.")
+            logging.debug(e)
+
+
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         raise
@@ -128,3 +155,5 @@ def run_scrape():
         logging.info("Closing browser.")
         random_delay(1, 2)
         driver.quit()
+
+# run_scrape("development@the-resources-group.com", "JKR791w!", "formA")
